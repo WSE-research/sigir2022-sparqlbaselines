@@ -28,6 +28,19 @@ torch.manual_seed(42)
 
 #final_data_test=data[0]
 
+class Model(nn.Module):
+        def __init__(self,model_name):
+                super(Model,self).__init__()
+                self.model=T5ForConditionalGeneration.from_pretrained(model_name)
+
+        def forward(self,input):
+                outputs=self.model(input_ids=input['input_ids'], \
+                                           labels=input['labels'],  \
+                                           attention_mask=input['attention_mask'], \
+                                           output_hidden_states=True,output_attentions=True)
+
+                return outputs.loss
+
 
 
 # TODO: get logger from module
