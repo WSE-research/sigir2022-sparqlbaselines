@@ -43,23 +43,13 @@ class Model(nn.Module):
 
 
 
-# TODO: get logger from module
-c_handler = logging.StreamHandler()
-c_handler.setLevel(logging.INFO)
-c_formatter = logging.Formatter('%(asctime)s - %(name)s - [%(levelname)s] %(message)s')
-c_handler.setFormatter(c_formatter)
-
-logger = logging.getLogger(__name__)
-logger.addHandler(c_handler)
-
-
 # args
 num_gpus = 1
 eval_bs = 8
 beam = 10
 model_name = 't5-base'
 device = 0
-save_dir = '.'
+save_dir = 'base'
 checkpoint = 'split_mix1_checkpoint11000.pth'
 
 #self
@@ -72,7 +62,7 @@ model.to(f'cuda:{model.device_ids[0]}')
 params=torch.load(save_dir+'/'+checkpoint, map_location='cuda:0'); # NOT self.
 model.load_state_dict(params);
 model.eval() # set model to evaluation mode, instead of train
-logger.info("STARTED")
+print("STARTED")
 
 sparql_vocab=['?x','{','}','?uri','SELECT', 'DISTINCT', 'COUNT', '(', ')',  \
               'WHERE', '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>', \
@@ -122,7 +112,7 @@ def readable(string):
 
 
 def answer(question: str):
-    logger.info(f"attempt to answer \"{question}\"")
+    print(f"attempt to answer \"{question}\"")
     bs,i = eval_bs,0
     saver = []
 
@@ -134,18 +124,19 @@ def answer(question: str):
     inp.append(question)
     label.append("DUMMY")
 
-    logger.info("preprocess")
+    print("preprocess")
     input = preprocess_function(inp,label)
 
     # generate output
-    logger.info("generate output")
+    print("generate output")
     output=model.module.model.generate(input_ids=input['input_ids'],
                             num_beams=beam,attention_mask=input['attention_mask'], \
                             early_stopping=True, max_length=100,num_return_sequences=beam)
     out = tokenizer.batch_decode(output,skip_special_tokens=False)
+    print(out)
 
     # TODO: process output
-    logger.info("process ouput")
+    print("process ouput")
     dict={}
     # TODO: for now assuming len(inp)==1
     dict['question'] = readable(inp[0])
@@ -154,9 +145,9 @@ def answer(question: str):
     # collect top n candidtes (n dictated by beam)
     for s in range(beam):
         dict['top_' + str(beam) + '_output']. \
-            append(readable(out[beam+s].replace('<pad>','').replace('</s>','').strip()))
+            append(readable(out[s].replace('<pad>','').replace('</s>','').strip()))
 
-    logger.info(f"DICT: {dict}")
+    print(f"DICT: {dict}")
     return dict
 
 
